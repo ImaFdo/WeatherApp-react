@@ -572,19 +572,22 @@ function App() {
       {weather && !isLoading && (
         <div className="outfit-suggestions">
           <h3 className="section-title">👔 Formal Wear Recommendations</h3>
-          <div className="outfit-grid">
+          <div className="outfit-unified-card">
             {getOutfitSuggestions(weather).map((outfit, index) => (
-              <div key={index} className="outfit-card">
-                <div className="outfit-header">
-                  <span className="outfit-icon">{outfit.icon}</span>
-                  <span className="outfit-type">{outfit.type}</span>
+              <div key={index} className="outfit-item">
+                <div className="outfit-item-header">
+                  <span className="outfit-item-icon">{outfit.icon}</span>
+                  <span className="outfit-item-type">{outfit.type}</span>
                 </div>
-                <div className="outfit-description">
+                <div className="outfit-item-description">
                   {outfit.description}
                 </div>
-                <div className="outfit-details">
-                  {outfit.details}
+                <div className="outfit-item-details">
+                  💡 {outfit.details}
                 </div>
+                {index < getOutfitSuggestions(weather).length - 1 && (
+                  <div className="outfit-divider"></div>
+                )}
               </div>
             ))}
           </div>
