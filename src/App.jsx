@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 
-const API_KEY = import.meta.env.VITE_API_KEY;
+// For production deployment, we embed the API key directly
+// In a real production app, you would use environment variables or a backend proxy
+const API_KEY = import.meta.env.VITE_API_KEY || 'e740cd071467aed19e8474da2519c568';
 
 function App() {
   const [city, setCity] = useState('');
@@ -10,7 +12,7 @@ function App() {
   const [forecast, setForecast] = useState([]);
   const [error, setError] = useState('');
   const [backgroundClass, setBackgroundClass] = useState('day');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading true
   const [weatherType, setWeatherType] = useState('clear');
   const scrollRefs = useRef({});
 
@@ -20,28 +22,60 @@ function App() {
       console.error('API Key is missing! Please check your .env file.');
       setError('API Key is missing. Please check configuration.');
     } else {
-      console.log('API Key loaded successfully');
+      console.log('API Key loaded successfully:', API_KEY.substring(0, 8) + '...');
     }
   }, []);
 
   // Load last searched city or default city
   useEffect(() => {
     const initializeApp = async () => {
+      setIsLoading(true);
+      setError('');
+      
       if (!API_KEY) {
         console.error('Cannot initialize app: API Key is missing');
+        setError('API Key is missing. Please refresh the page.');
+        setIsLoading(false);
         return;
       }
       
+      // Test API connectivity first
+      try {
+        console.log('Testing API connectivity...');
+        const testResponse = await axios.get(
+          `https://api.openweathermap.org/data/2.5/weather?q=London&appid=${API_KEY}&units=metric`
+        );
+        console.log('API test successful:', testResponse.status);
+      } catch (err) {
+        console.error('API test failed:', err);
+        if (err.response?.status === 401) {
+          setError('Invalid API key. The weather service is not accessible.');
+          setIsLoading(false);
+          return;
+        } else if (err.code === 'NETWORK_ERROR' || !err.response) {
+          console.warn('Network connectivity issue, continuing anyway...');
+        }
+      }
+      
       const savedCity = localStorage.getItem('lastSearchedCity');
-      const cityToLoad = savedCity || 'colombo';
+      const cityToLoad = savedCity || 'London'; // Changed to London for better reliability
 
       console.log('Initializing app with city:', cityToLoad);
       setCity(cityToLoad);
-      await fetchWeather(cityToLoad);
-      await fetchHourlyWeather(cityToLoad);
+      
+      try {
+        await fetchWeather(cityToLoad);
+        await fetchHourlyWeather(cityToLoad);
+      } catch (err) {
+        console.error('Failed to initialize weather data:', err);
+        setError('Failed to load weather data. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    initializeApp();
+    // Small delay to ensure page is ready
+    setTimeout(initializeApp, 500);
   }, []);
 
   const getBackgroundClass = (weatherData) => {
